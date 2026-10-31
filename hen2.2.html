@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="touch-action" content="manipulation">
+    <title>Poseidon 2.2.0 Skin</title>
+    <style>
+        /* Estilos base para hacer que parezca una App de consola */
+        :root {
+            --bg-color: #1a1a1a;
+            --header-height: 60px;
+            --text-light: #f0f0f0;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Papyrus", "Ridged", "Helvetica Neue", sans-serif; /* Tipografía estilo PS4 */
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra de información de la Wiki/Hen */
+        #hen-info {
+            height: var(--header-height);
+            background-color: #004088; /* Azul cuerpo de agua */
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Selector de la "Versión" */
+        #version-selector {
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #selector-value {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 5px;
+            color: #00ffff;
+        }
+
+        .loading {
+            position: absolute;
+            right: 20px;
+            opacity: 0.8;
+            font-size: 12px;
+        }
+
+        /* Contenedor principal */
+        #app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .artifact {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .artifact:active {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Animación de entrada */
+        .splash {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: transparent;
+            background: linear-gradient(to top, var(--bg-color), transparent);
+            pointer-events: none;
+            animation: ripple 2s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% { transform: scaleY(1); filter: brightness(1); }
+            50% { transform: scaleY(1.5); filter: brightness(0.8); }
+            100% { transform: scaleY(0); filter: brightness(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="hen-info">
+        <div id="version-selector">HEN <span id="selector-value">2.2.0</span></div>
+        <div class="loading" id="loading-text">Analizando...</div>
+    </div>
+
+    /* Fondo animado estilo Poseidon/Water */
+    <div class="splash"></div>
+
+    <div id="app-content">
+        <!-- Warefs -->
+        <div class="artifact" onclick="openWaref(this)">
+            <span>WAREFS</span>
+        </div>
+        
+        <!-- Wgho (Grafos) -->
+        <div class="artifact" onclick="openWgho(this)">
+            <span>GRAFO</span>
+        </div>
+
+        <!-- Wpgd (Titulos) -->
+        <div class="artifact" onclick="openWpgd(this)">
+            <span>HISTÓRIA</span>
+        </div>
+
+        <!-- Wset (Menu Personalizar) -->
+        <div class="artifact" onclick="openWset(this)">
+            <span>SETUP</span>
+        </div>
+        
+        <!-- Wgtl (Scripts/Telas) -->
+        <div class="artifact" onclick="openWgtl(this)">
+            <span>TÍTULOS</span>
+        </div>
+    </div>
+
+    <script>
+        // 1. Función para detectar versión del Sist (Hen 1.2 usa PS4 System Ver, Hen 2.2 también)
+        // Nota: Las versiones "2.01" (2_01) son notables en Hen 2.2.
+        function detectVersion() {
+            if (typeof PS4SystemVer !== 'undefined') {
+                const verValue = PS4SystemVer; // Ej: "1_40" or "2_01"
+                let cleanVer = verValue.replace("_", "."); // Ej: "1.40" or "2.01"
+
+                // Lógica condicional (Ayu 2.2 maneja varios cambios específicos)
+                let baseVersion = "14";
+
+                if (cleanVer === "14.00") {
+                    // Si tiene la versión 14.00 exacta
+                    openArtifact("W14_00"); 
+                } else if (cleanVer >= "14.00") {
+                    // Si es mayor (14.01, 14.02...)
+                    openArtifact("W14_00"); 
+                } else if (cleanVer === "2.01") {
+                    // Caso especial muy común en Hen 2.2
+                    openArtifact("W2_01");
+                } else {
+                    console.log("Versión detectada: " + cleanVer);
+                    alert("Posiblemente necesites una nueva versión para la versión " + cleanVer);
+                }
+                
+                document.getElementById('selector-value').innerText = cleanVer;
+                document.getElementById('loading-text').style.opacity = "0";
+            }
+        }
+
+        // Función para abrir Warefs
+        function openWaref(el) {
+            // Remove old overlay
+            const overlay = document.getElementById("overlay");
+            if (overlay) overlay.remove();
+
+            const content = document.getElementById("artifact-content");
+            content.innerHTML = "";
+            
+            // Lógica: Si es 14.00 y no hay 14_00 personalizado, usar genérico
+            createFileContent(content, "manifest.wef", "Versión Genérica 2.2");
+            
+            overlay.style.display = "flex";
+            openWgtl(el); // Recurso políglota
+        }
+
+        // Estilos para el Modal/Overlay
+        const overlayStyle = document.createElement('style');
+        overlayStyle.innerHTML = `
+            #overlay {
+                position: fixed;
+                top: var(--header-height);
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.3);
+                display: none;
+                justify-content: center;
+                align-items: center;
+                z-index: 20;
+                backdrop-filter: blur(
